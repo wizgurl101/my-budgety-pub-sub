@@ -7,7 +7,9 @@ import (
 )
 
 type EnvVariables struct {
-	TestVariable string
+	ProjectName    string
+	GCPAppCred     string
+	SubscriptionId string
 }
 
 func GetEnvVariables() EnvVariables {
@@ -17,6 +19,8 @@ func GetEnvVariables() EnvVariables {
 	}
 
 	return EnvVariables{
-		TestVariable: os.Getenv("TEST_VARIABLE"),
+		ProjectName:    os.Getenv("PROJECT_NAME"),
+		GCPAppCred:     os.Getenv("SERVICE_ACCOUNT_PATH"),
+		SubscriptionId: os.Getenv("SUBSCRIPTION_ID"),
 	}
 }
