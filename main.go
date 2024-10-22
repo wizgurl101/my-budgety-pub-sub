@@ -11,7 +11,6 @@ import (
 
 func main() {
 	envVariables := utils.GetEnvVariables()
-	fmt.Println("GCP App Credential:", envVariables.GCPAppCred)
 
 	ctx := context.Background()
 	client, err := pubsub.NewClient(ctx, envVariables.ProjectName)
