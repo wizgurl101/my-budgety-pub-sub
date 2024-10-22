@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"my-budgety-pub-sub/services"
 	"my-budgety-pub-sub/utils"
 	"sync/atomic"
 
 	"cloud.google.com/go/pubsub"
 )
 
-func main() {
+func GetMessage() {
 	envVariables := utils.GetEnvVariables()
 
 	ctx := context.Background()
@@ -33,4 +34,19 @@ func main() {
 		fmt.Print(err)
 	}
 	fmt.Println("Received", received, "messages")
+}
+
+func main() {
+	projectName, err := services.GetSecretValue("project_name")
+	if err != nil {
+		panic("Error getting project name")
+	}
+
+	subscriptionName, err := services.GetSecretValue("pub-sub-subscription-id")
+	if err != nil {
+		panic("Error getting subscription name")
+	}
+
+	fmt.Printf("Project Name: %s\n", projectName)
+	fmt.Printf("Subscription Name: %s\n", subscriptionName)
 }
