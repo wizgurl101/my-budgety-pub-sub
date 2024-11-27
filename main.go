@@ -1,18 +1,41 @@
 package main
 
 import (
+	"fmt"
 	"my-budgety-pub-sub/services"
 )
 
 func main() {
-	projectName, err := services.GetSecretValue("project_name")
-	if err != nil {
-		panic("Error getting project name")
-	}
+	projectNameChan := make(chan string)
+	subscriptionNameChan := make(chan string)
+	errChan := make(chan error)
 
-	subscriptionName, err := services.GetSecretValue("pub-sub-subscription-id")
-	if err != nil {
-		panic("Error getting subscription name")
+	go func() {
+		projectName, err := services.GetSecretValue("project_name")
+		if err != nil {
+			errChan <- fmt.Errorf("Error getting project name: %v", err)
+			return
+		}
+		projectNameChan <- projectName
+	}()
+
+	go func() {
+		subscriptionName, err := services.GetSecretValue("pub-sub-subscription-id")
+		if err != nil {
+			errChan <- fmt.Errorf("Error getting subscription name: %v", err)
+			return
+		}
+		subscriptionNameChan <- subscriptionName
+	}()
+
+	var projectName, subscriptionName string
+	for i := 0; i < 2; i++ {
+		select {
+		case err := <-errChan:
+			panic(err)
+		case projectName = <-projectNameChan:
+		case subscriptionName = <-subscriptionNameChan:
+		}
 	}
 
 	services.GetMessage(projectName, subscriptionName)
