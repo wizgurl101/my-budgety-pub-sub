@@ -1,36 +1,42 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"my-budgety-pub-sub/utils"
-	"sync/atomic"
-
-	"cloud.google.com/go/pubsub"
+	"my-budgety-pub-sub/services"
 )
 
 func main() {
-	envVariables := utils.GetEnvVariables()
+	projectNameChan := make(chan string)
+	subscriptionNameChan := make(chan string)
+	errChan := make(chan error)
 
-	ctx := context.Background()
-	client, err := pubsub.NewClient(ctx, envVariables.ProjectName)
-	if err != nil {
-		fmt.Println("Error creating pubsub client")
-		panic(err)
+	go func() {
+		projectName, err := services.GetSecretValue("project_name")
+		if err != nil {
+			errChan <- fmt.Errorf("Error getting project name: %v", err)
+			return
+		}
+		projectNameChan <- projectName
+	}()
+
+	go func() {
+		subscriptionName, err := services.GetSecretValue("pub-sub-subscription-id")
+		if err != nil {
+			errChan <- fmt.Errorf("Error getting subscription name: %v", err)
+			return
+		}
+		subscriptionNameChan <- subscriptionName
+	}()
+
+	var projectName, subscriptionName string
+	for i := 0; i < 2; i++ {
+		select {
+		case err := <-errChan:
+			panic(err)
+		case projectName = <-projectNameChan:
+		case subscriptionName = <-subscriptionNameChan:
+		}
 	}
-	defer client.Close()
 
-	sub := client.Subscription(envVariables.SubscriptionId)
-
-	var received int32
-	err = sub.Receive(ctx, func(_ context.Context, msg *pubsub.Message) {
-		fmt.Printf("Got message: %q\n", string(msg.Data))
-		atomic.AddInt32(&received, 1)
-		msg.Ack()
-	})
-	if err != nil {
-		fmt.Println("Error receiving message")
-		fmt.Print(err)
-	}
-	fmt.Println("Received", received, "messages")
+	services.GetMessage(projectName, subscriptionName)
 }
