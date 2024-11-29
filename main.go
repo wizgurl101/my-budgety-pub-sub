@@ -13,7 +13,7 @@ func main() {
 	go func() {
 		projectName, err := services.GetSecretValue("project_name")
 		if err != nil {
-			errChan <- fmt.Errorf("Error getting project name: %v", err)
+			errChan <- fmt.Errorf("error getting project name: %v", err)
 			return
 		}
 		projectNameChan <- projectName
@@ -22,7 +22,7 @@ func main() {
 	go func() {
 		subscriptionName, err := services.GetSecretValue("pub-sub-subscription-id")
 		if err != nil {
-			errChan <- fmt.Errorf("Error getting subscription name: %v", err)
+			errChan <- fmt.Errorf("error getting subscription name: %v", err)
 			return
 		}
 		subscriptionNameChan <- subscriptionName
@@ -38,5 +38,5 @@ func main() {
 		}
 	}
 
-	services.GetMessage(projectName, subscriptionName)
+	services.DiableBillingIfBudgetIsReach(projectName, subscriptionName)
 }
