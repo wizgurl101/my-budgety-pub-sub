@@ -43,7 +43,7 @@ func DiableBillingIfBudgetIsReach(projectName string, subscriptionId string) {
 			// send email notifcations
 
 		} else {
-			fmt.Printf("spend amount is less than budget amount")
+			fmt.Printf("spend amount is less than budget amount\n")
 		}
 
 		// atomic.AddInt32(&received, 1)
