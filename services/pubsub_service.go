@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 
 	"cloud.google.com/go/pubsub"
 )
 
-func DiableBillingIfBudgetIsReach(projectName string, subscriptionId string) {
+func isSpendingGreaterThanBudget(projectName string, subscriptionId string) (bool, error) {
 	ctx := context.Background()
 	client, err := pubsub.NewClient(ctx, projectName)
 	if err != nil {
@@ -20,7 +21,7 @@ func DiableBillingIfBudgetIsReach(projectName string, subscriptionId string) {
 
 	sub := client.Subscription(subscriptionId)
 
-	// var received int32
+	var received int32
 	err = sub.Receive(ctx, func(_ context.Context, msg *pubsub.Message) {
 		type MessageData struct {
 			CostAmount   float32 `json:"costAmount"`
@@ -31,7 +32,7 @@ func DiableBillingIfBudgetIsReach(projectName string, subscriptionId string) {
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			fmt.Printf("Error unmarshalling message data: %v\n", err)
 			msg.Nack()
-			return
+			return nil, err
 		}
 
 		var spendAmount float32 = data.CostAmount
@@ -40,14 +41,14 @@ func DiableBillingIfBudgetIsReach(projectName string, subscriptionId string) {
 		if spendAmount == budgetAmount {
 			fmt.Printf("disable billing")
 
-			// send email notifcations
+			return true, nil
 
 		} else {
 			fmt.Printf("spend amount is less than budget amount\n")
 		}
 
-		// atomic.AddInt32(&received, 1)
-		// msg.Ack()
+		atomic.AddInt32(&received, 1)
+		msg.Ack()
 	})
 	if err != nil {
 		panic(

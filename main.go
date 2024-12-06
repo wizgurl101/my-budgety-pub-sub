@@ -8,6 +8,7 @@ import (
 func main() {
 	projectNameChan := make(chan string)
 	subscriptionNameChan := make(chan string)
+	billingAccountNameChan := make(chan string)
 	errChan := make(chan error)
 
 	go func() {
@@ -28,15 +29,25 @@ func main() {
 		subscriptionNameChan <- subscriptionName
 	}()
 
-	var projectName, subscriptionName string
+	go func() {
+		billingAccountName, err := services.GetSecretValue("billing_account_name")
+		if err != nil {
+			errChan <- fmt.Errorf("error getting billing account name: %v", err)
+			return
+		}
+		billingAccountNameChan <- billingAccountName
+	}()
+
+	var projectName, subscriptionName, billingAccountName string
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-errChan:
 			panic(err)
 		case projectName = <-projectNameChan:
 		case subscriptionName = <-subscriptionNameChan:
+		case billingAccountName = <-billingAccountNameChan:
 		}
 	}
 
-	services.DiableBillingIfBudgetIsReach(projectName, subscriptionName)
+	disableBilling, err = services.isSpendingGreaterThanBudget(projectName, subscriptionName, billingAccountName)
 }
